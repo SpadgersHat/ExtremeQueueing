@@ -58,7 +58,7 @@ def attack(health, damage):
 def attr_string(old, new, team_no, unit_pos, stat):
     for x in range(len(old)):
         for y in range(len(old[x])):
-            if new[team_no][unit_pos].UID == old[x][y]:
+            if new[team_no][unit_pos].UID == old[x][y].UID:
                 return find_change_string(old[x][y], new[team_no][unit_pos], stat)
     if stat == 'attack':
         return f"{new[team_no][unit_pos].attack}"
@@ -175,6 +175,8 @@ def clear_turn_data(teams):
 
 
 def print_turn(teams, new_teams):
+    print(teams[0][0].health)
+    print(new_teams[0][0].health)
     for x in range(len(new_teams[1]) - 1):
         this = len(new_teams[1]) - x - 1
         o_b = teams[1][len(new_teams[1]) - x - 1]
