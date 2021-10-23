@@ -183,8 +183,6 @@ def summon(teams, team_no, unit_pos, bits, tokens, when):
     new_tokens.append(['summoned', newbie])
     new_tokens.append(['summon', teams[team_no][unit_pos]])
     newbie.actions += 'Joins the queue. '
-    for x in teams[0]:
-        print(x.name)
     return teams, new_tokens
 
 

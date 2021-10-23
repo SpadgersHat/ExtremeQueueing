@@ -1,5 +1,5 @@
 from copy import deepcopy
-from random import randint
+from random import randint, shuffle
 from time import sleep
 
 import abilities
@@ -175,8 +175,6 @@ def clear_turn_data(teams):
 
 
 def print_turn(teams, new_teams):
-    print(teams[0][0].health)
-    print(new_teams[0][0].health)
     for x in range(len(new_teams[1]) - 1):
         this = len(new_teams[1]) - x - 1
         o_b = teams[1][len(new_teams[1]) - x - 1]
@@ -383,23 +381,21 @@ def find_whenevers(new_tokens, triggers, teams, when):
 
 
 def autofill_teams():
-    # players = [keys for keys in dictionaries.units]
-    players = [['035', '036', '010', '026', '029'], ['010', '004', '028', '006', '010']]
+    team_1_players = [keys for keys in dictionaries.units]
+    players = ['035', '036', '010', '026', '029']
     UID = 0
     selections = [x for x in range(5)]
     squads = [[], []]
     teams = [[], []]
-    team = 0
-    for x in range(len(squads)):
-        # shuffle(players)
-        for y in range(5):
-            UID += 1
-            # recruit(squads[x], players[y], randint(1, 3), UID)
-            recruit(squads[x], players[team][y], randint(1, 3), UID)
-        for y in selections:
-            teams[x].append(squads[x][y])
-        team += 1
-    return teams
+    # Right now, for ease, and because there is no team selection, it returns squads
+    for y in range(5):
+        UID += 1
+        recruit(squads[0], players[y], randint(1, 3), UID)
+    shuffle(team_1_players)
+    for y in range(5):
+        UID += 1
+        recruit(squads[1], team_1_players[y], randint(1, 3), UID)
+    return squads
 
 
 def find_triggers(teams):
