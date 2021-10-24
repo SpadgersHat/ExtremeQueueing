@@ -1,10 +1,11 @@
 from copy import deepcopy
 from random import randint, shuffle
 from time import sleep
+from teams import npcs
 
 import abilities
-import dictionaries
 import classes
+import dictionaries
 
 
 def ability(ability_type, teams, team_no, unit_pos, bits, tokens, when):
@@ -175,17 +176,24 @@ def clear_turn_data(teams):
 
 
 def print_turn(teams, new_teams):
+    # For an enemy who summons, the inverse looping doesn't work because one starts at 6 and one starts at 5.
     for x in range(len(new_teams[1]) - 1):
-        this = len(new_teams[1]) - x - 1
-        o_b = teams[1][len(new_teams[1]) - x - 1]
-        n_b = new_teams[1][len(new_teams[1]) - x - 1]
+        digit = len(new_teams[1]) - x - 1
+        now = new_teams[1][digit]
+        then = ''
+        for y in teams[1]:
+            if y.UID == now.UID:
+                then = y
+        if not then:
+            then = now
+        attack_string = attr_string(teams, new_teams, 1, digit, 'attack')
+        health_string = attr_string(teams, new_teams, 1, digit, 'health')
         print(
-            f"{' ' * (92 - ((len(o_b.name)) + len(attr_string(teams, new_teams, 1, len(new_teams[1]) - x - 1, 'attack')) + len(attr_string(teams, new_teams, 1, len(new_teams[1]) - x - 1, 'health'))))}"
-            f"{o_b.name} - "
-            f"{attr_string(teams, new_teams, 1, len(new_teams[1]) - x - 1, 'attack')}|\
-{attr_string(teams, new_teams, 1, len(new_teams[1]) - x - 1, 'health')} "
-            f"{is_it_arrowhead(this, 0, 1)}\n"
-            f"{' ' * (96 - len(n_b.actions))}{n_b.actions} {is_it_arrowhead(this, 1, 1)}")
+            f"{' ' * (92 - (len(then.name) + len(attack_string) + len(health_string)))}"
+            f"{then.name} - "
+            f"{attack_string}|{health_string} "
+            f"{is_it_arrowhead(digit, 0, 1)}\n"
+            f"{' ' * (96 - len(now.actions))}{now.actions} {is_it_arrowhead(digit, 1, 1)}")
     print(f"{' ' * 6}{new_teams[0][0].name.upper()}"
           f"{' ' * (85 - len(new_teams[1][0].name + new_teams[0][0].name))}{new_teams[1][0].name.upper()}\n"
           f"{' ' * 10}{attr_string(teams, new_teams, 0, 0, 'attack')}  |  "
@@ -207,6 +215,8 @@ def print_turn(teams, new_teams):
 def run_abilities(teams, triggers, when, tokens):
     try_again = True
     while try_again:
+        #print('trying another run')
+        #print(teams[0][3].this_turn['spent'])
         try_again = False
         for x in range(max(len(teams[0]), len(teams[1]))):
             for y in range(2):
@@ -217,7 +227,10 @@ def run_abilities(teams, triggers, when, tokens):
                     if univ_checks(teams, y, x, when):
                         if who_checks(teams, y, x, when):
                             if what_checks(teams, y, x, when):
+                                #print('sending to ability')
                                 teams, tokens = do_ability(teams, y, x, triggers, tokens, when, False)
+                                #print('i came back')
+                                #print(teams[0][3].this_turn['spent'])
                                 try_again = True
                 except IndexError:
                     pass
@@ -313,56 +326,76 @@ def check_for_triggers(tokens, triggers):
 
 
 def whenever(teams, triggers, trigger, tokens, when):
+    #print('i went to whenever for')
+    #print(trigger[0])
     new_tokens = []
     for x in range(2):
         for y in range(len(teams[x])):
-            try:
-                if teams[x][y].ability_bits['trigger']['what'] in trigger[0]:
-                    # if teams[x][y].health > 0:
-                    if teams[x][y].ability_bits['trigger']['who']['type'] == 'self':
-                        for z in tokens:
-                            # If you're in the triggers list and if you've triggered your own ability.
-                            if z[1].UID == teams[x][y].UID and z[0] == trigger[0]:
-                                if teams[x][y].ability_bits['trigger']['who']['position']:
-                                    # For Minki, Checks if you're in the right position to trigger.
-                                    if teams[x][y].ability_bits['trigger']['who']['position'] != y:
+            if teams[x][y].ability_bits['trigger']:
+                if teams[x][y].ability_bits['trigger']['when']['phase'] == 'whenever':
+                    try:
+                        if teams[x][y].ability_bits['trigger']['what'] in trigger[0]:
+                            #print('i got through the first barrier for')
+                            #print(teams[x][y].name)
+                            # if teams[x][y].health > 0:
+                            if teams[x][y].ability_bits['trigger']['who']['type'] == 'self':
+                                for z in tokens:
+                                    # If you're in the triggers list and if you've triggered your own ability.
+                                    if z[1].UID == teams[x][y].UID and z[0] == trigger[0]:
+                                        if teams[x][y].ability_bits['trigger']['who']['position']:
+                                            # For Minki, Checks if you're in the right position to trigger.
+                                            if teams[x][y].ability_bits['trigger']['who']['position'] != y:
+                                                pass
+                                        teams[x][y].this_turn['spent'] = False
+                                        #print('Im about to do an ability for' + teams[x][y])
+                                        teams, temp_tokens = do_ability(teams, x, y, triggers, tokens, when, True)
+                                        for token in temp_tokens:
+                                            new_tokens.append(token)
+                                    else:
                                         pass
-                                teams[x][y].this_turn['spent'] = False
-                                teams, temp_tokens = do_ability(teams, x, y, triggers, tokens, when, True)
-                                for token in temp_tokens:
-                                    new_tokens.append(token)
-                            else:
+                            elif teams[x][y].ability_bits['trigger']['who']['type'] == 'any':
+                                # Filters out abilities triggered by members of the wrong triggering team.
+                                if teams[x][y].ability_bits['trigger']['who']['team'] != '' and \
+                                        (trigger[1] not in teams[x + teams[x][y].ability_bits['trigger']['who']['team']]):
+                                    # I think this is triggering any on the wrong team help
+                                    print('wrong team')
+                                    pass
+                                else:
+                                    teams[x][y].this_turn['spent'] = False
+                                    #print('Im about to do an ability 2 for' + teams[x][y])
+                                    teams, temp_tokens = do_ability(teams, x, y, triggers, tokens, when, True)
+                                    for token in temp_tokens:
+                                        new_tokens.append(token)
+                            elif teams[x][y].ability_bits['trigger']['who']['type'] == 'relative':
                                 pass
-                    elif teams[x][y].ability_bits['trigger']['who']['type'] == 'any':
-                        # Filters out abilities triggered by members of the wrong triggering team.
-                        if teams[x][y].ability_bits['trigger']['who']['team'] and \
-                                trigger[1] not in teams[x + teams[x][y].ability_bits['trigger']['who']['team']]:
-                            pass
-                        else:
-                            teams[x][y].this_turn['spent'] = False
-                            teams, temp_tokens = do_ability(teams, x, y, triggers, tokens, when, True)
-                            for token in temp_tokens:
-                                new_tokens.append(token)
-                    elif teams[x][y].ability_bits['trigger']['who']['type'] == 'relative':
+                                # There aren't any whenever abilities triggered by relative position yet, but there might be.
+                    except TypeError:
+                        #print('i got here')
                         pass
-                        # There aren't any whenever abilities triggered by relative position yet, but there might be.
-            except TypeError:
-                pass
+    #print('i left whenever')
     return teams, new_tokens
 
 
 def do_ability(teams, team_index, unit_index, triggers, tokens, when, send_back):
+    #print('doing ability for' + teams[team_index][unit_index].name)
     if not teams[team_index][unit_index].this_turn['spent']:
+        #print('not spent')
         yer_man = teams[team_index][unit_index]
+        #print(yer_man.name)
         teams, new_tokens = ability(teams[team_index][unit_index].ability_bits['response']
                                     ['what'], teams, team_index, unit_index,
                                     teams[team_index][unit_index].ability_bits, tokens,
                                     when)
         yer_man.this_turn['spent'] = True
+        #print(yer_man.this_turn['spent'])
+        #print(teams[team_index][unit_index].this_turn['spent'])
+        #print(new_tokens)
         teams, new_tokens = find_whenevers(new_tokens, triggers, teams, when)
     else:
         #Hey, listen, this is just because otherwise the earlier if does nothing. Is it all redundant? Who knows.
         new_tokens = tokens
+    #print(teams[team_index][unit_index].this_turn['spent'])
+    #print('i returned from do ability')
     return teams, new_tokens
 
 
@@ -372,7 +405,11 @@ def find_whenevers(new_tokens, triggers, teams, when):
             trigger = check_for_triggers(new_tokens, triggers)
             use_tokens = [token for token in new_tokens if token[0] == trigger[0]]
             new_tokens = [token for token in new_tokens if token[0] != trigger[0]]
+            #print('before whenever')
+            #print(teams[0][3].this_turn['spent'])
             teams, newer_tokens = whenever(teams, triggers, trigger, use_tokens, when)
+            #print('after whenever')
+            #print(teams[0][3].this_turn['spent'])
             for x in newer_tokens:
                 new_tokens.append(x)
         else:
@@ -380,21 +417,21 @@ def find_whenevers(new_tokens, triggers, teams, when):
     return teams, new_tokens
 
 
-def autofill_teams():
-    team_1_players = [keys for keys in dictionaries.units]
-    players = ['035', '036', '010', '026', '029']
+def fill_teams(team_names):
     UID = 0
-    selections = [x for x in range(5)]
     squads = [[], []]
-    teams = [[], []]
-    # Right now, for ease, and because there is no team selection, it returns squads
-    for y in range(5):
-        UID += 1
-        recruit(squads[0], players[y], randint(1, 3), UID)
-    shuffle(team_1_players)
-    for y in range(5):
-        UID += 1
-        recruit(squads[1], team_1_players[y], randint(1, 3), UID)
+    for x in range(2):
+        if team_names[x] == 'random':
+            players = [keys for keys in dictionaries.units]
+            shuffle(players)
+            for y in range(5):
+                UID += 1
+                recruit(squads[x], players[y], randint(1, 3), UID)
+        else:
+            players = npcs[team_names[x]]
+            for y in range(5):
+                UID += 1
+                recruit(squads[x], players[y], randint(1, 3), UID)
     return squads
 
 
@@ -428,7 +465,7 @@ def make_negative_health_zero(teams):
 
 
 def match():
-    teams = autofill_teams()
+    teams = fill_teams(['Heal Everyone', 'random'])
     this_turn = 1
     triggers = find_triggers(teams)
     phases = ['summondeath', 'action', 'summondeath', 'between', 'summondeath']

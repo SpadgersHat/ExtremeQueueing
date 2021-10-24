@@ -1,6 +1,4 @@
-my_string = 'fling'
+flaps = ''
 
-plenth = 'flinging'
-
-if my_string in plenth:
-    print('fly!')
+if not flaps:
+    print('treen')

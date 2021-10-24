@@ -56,25 +56,27 @@ def heal(teams, team_no, unit_pos, bits, tokens, when):
     # The unit heals units in targets by an ['increment'], or as much as is possible to achieve max health.
     targets = create_targets(teams, team_no, unit_pos, bits['response'], tokens)
     heal_strings = [f"for {bits['response']['how']['increment']}HP", 'to full health']
-    for x in targets:
-        if (x.health == x.max_health) or (unit_pos == 0 and bits['response']['who']['position'] < 0) \
-                or x.health <= 0:
-            break
-        try:
-            x.health += bits['response']['how']['increment']
-        except IndexError:
-            pass
-        if x.health >= x.max_health:
-            x.health = x.max_health
-            heal_string_choice = 1
-        else:
-            heal_string_choice = 0
-        teams[team_no][unit_pos].actions += \
-            f'Healed {x.name} {heal_strings[heal_string_choice]}. '
-        x.actions += f'Healed {heal_strings[heal_string_choice]}. '
-        # This token shows that healing has taken place, the position of the healer and the position of the unit healed.
-        new_tokens.append(['heal', teams[team_no][unit_pos]])
-        new_tokens.append(['healed', x])
+    try:
+        for x in targets:
+            if not ((x.health == x.max_health) or x.health <= 0):
+                if bits['response']['who']['position']:
+                    if not (unit_pos == 0 and bits['response']['who']['position'] < 0):
+                        x.health += bits['response']['how']['increment']
+                else:
+                    x.health += bits['response']['how']['increment']
+                if x.health >= x.max_health:
+                    x.health = x.max_health
+                    heal_string_choice = 1
+                else:
+                    heal_string_choice = 0
+                teams[team_no][unit_pos].actions += \
+                    f'Healed {x.name} {heal_strings[heal_string_choice]}. '
+                x.actions += f'Healed {heal_strings[heal_string_choice]}. '
+                # This token shows that healing has taken place, the position of the healer and the position of the unit healed.
+                new_tokens.append(['heal', teams[team_no][unit_pos]])
+                new_tokens.append(['healed', x])
+    except IndexError:
+        pass
     return teams, new_tokens
 
 
@@ -109,9 +111,9 @@ def adjust(teams, team_no, unit_pos, bits, tokens, when):
             if len(stats) == 1:
                 x.actions += f" {stats[0].capitalize()} " \
                              f"{string_names[bits['response']['how']['type']][2]} \
-    {string_names[bits['response']['how']['type']][3]} {bits['response']['how']['increment']}. "
+{string_names[bits['response']['how']['type']][3]} {bits['response']['how']['increment']}. "
                 teams[team_no][unit_pos].actions += f"{string_names[bits['response']['how']['type']][2].capitalize()} \
-    {x.name}'s {stats[0]}. "
+{x.name}'s {stats[0]}. "
             else:
                 x.actions += f"Attack and health {string_names[bits['response']['how']['type']][0]} \
 {string_names[bits['response']['how']['type']][3]} {bits['response']['how']['increment'][0]}|" \
@@ -121,7 +123,7 @@ f"{bits['response']['how']['increment'][1]}. "
         else:
             if len(stats) == 1:
                 teams[team_no][unit_pos].actions += f"{string_names[bits['response']['how']['type']][2].capitalize()} \
-own {stats} {string_names[bits['response']['how']['type']][3]} {bits['response']['how']['increment']}. "
+own {stats[0]} {string_names[bits['response']['how']['type']][3]} {bits['response']['how']['increment']}. "
             else:
                 teams[team_no][unit_pos].actions += f"{string_names[bits['response']['how']['type']][2].capitalize()} \
 own attack and health {string_names[bits['response']['how']['type']][3]} {bits['response']['how']['increment'][0]}|\
@@ -144,13 +146,18 @@ def operate(stat, operation, increment):
 
 
 def spit(teams, team_no, unit_pos, bits, tokens, when):
+    #print(teams[team_no][unit_pos].name)
     new_tokens = []
     targets = create_targets(teams, team_no, unit_pos, bits['response'], tokens)
+    if not targets:
+        #print('nobody to spit at')
+        return teams, new_tokens
     for x in targets:
         x.health -= bits['response']['how']['increment']
         new_tokens.append(['been hit', x])
         x.this_turn['been hit'] = True
         new_tokens.append(['hit', teams[team_no][unit_pos]])
+        new_tokens.append(['spit', teams[team_no][unit_pos]])
         teams[team_no][unit_pos].this_turn['hit'] = True
         teams[team_no][unit_pos].actions += \
             f"Spits at {x.name}. "
@@ -164,13 +171,15 @@ def summon(teams, team_no, unit_pos, bits, tokens, when):
     new_tokens = []
     UID = find_new_UID(teams)
     if bits['response']['how']['type'] == 'relative':
-        for x in dictionaries.units:
-            if dictionaries.units[x]['name'] == teams[team_no + bits['response']['how']['team']]\
-                    [unit_pos + bits['response']['how']['position']].name:
-                try:
-                    newbie = classes.Unit(dictionaries.units[x], bits['response']['how']['level'], UID)
-                except IndexError:
-                    return teams, new_tokens
+        if not ((bits['response']['how']['position'] < 0 and teams[team_no][unit_pos] == 0) or\
+            (bits['response']['how']['position'] > 0 and teams[team_no][unit_pos] == len(teams[team_no]))):
+            for x in dictionaries.units:
+                if dictionaries.units[x]['name'] == teams[team_no + bits['response']['how']['team']]\
+                        [unit_pos + bits['response']['how']['position']].name:
+                    try:
+                        newbie = classes.Unit(dictionaries.units[x], bits['response']['how']['level'], UID)
+                    except IndexError:
+                        return teams, new_tokens
     elif bits['response']['how']['type'] == 'code':
         newbie = classes.Unit(dictionaries.units[bits['response']['how']['code']], bits['response']['how']['level'],
                               UID)
@@ -197,7 +206,6 @@ def find_new_UID(teams):
         return UID
 
 
-
 def create_targets(teams, team_no, unit_pos, response, tokens):
     try:
         if response['who']['type'] == 'relative':
@@ -214,10 +222,17 @@ def create_targets(teams, team_no, unit_pos, response, tokens):
     elif response['who']['type'] == 'any':
         targets = []
         for x in tokens:
-            if (x[0] != response['who']['action']) or x[1] not in teams[team_no + response['who']['team']]:
-                pass
+            if response['who']['type']['team'] == 'any':
+                for y in range(2):
+                    if (x[0] != response['who']['action']) or x[1] not in teams[team_no - y]:
+                        pass
+                    else:
+                        targets.append(x[1])
             else:
-                targets.append(x[1])
+                if (x[0] != response['who']['action']) or x[1] not in teams[team_no + response['who']['team']]:
+                    pass
+                else:
+                    targets.append(x[1])
         return targets
     elif response['who']['type'] == 'all':
         return teams[team_no + response['who']['team']]
