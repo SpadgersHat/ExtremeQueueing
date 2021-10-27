@@ -464,8 +464,8 @@ def make_negative_health_zero(teams):
                 y.health = 0
 
 
-def match():
-    teams = fill_teams(['Heal Everyone', 'random'])
+def match(team_choices):
+    teams = fill_teams(team_choices)
     this_turn = 1
     triggers = find_triggers(teams)
     phases = ['summondeath', 'action', 'summondeath', 'between', 'summondeath']
@@ -502,4 +502,6 @@ def match():
         this_turn += 1
 
 
-match()
+# Change either of these team names to anything in the 'teams' file. You can add new teams on the 'teams' file and play
+# them here, or just write 'random' (lower case) to make a random team play in either position.
+match(['Shifters', 'Summoners'])
