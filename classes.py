@@ -17,7 +17,7 @@ class Unit:
         self.this_turn = {'spent': False,
                           'hit': False,
                           'been hit': False,
-                          # Could use this better...
+                          'spit': False,
                           'damaged': False,
                           'move forward': False,
                           'move back': False,

@@ -146,19 +146,21 @@ def operate(stat, operation, increment):
 
 
 def spit(teams, team_no, unit_pos, bits, tokens, when):
-    #print(teams[team_no][unit_pos].name)
     new_tokens = []
     targets = create_targets(teams, team_no, unit_pos, bits['response'], tokens)
+    if bits['response']['how']['once'] and teams[team_no][unit_pos].this_turn['spit']:
+        return teams, new_tokens
     if not targets:
-        #print('nobody to spit at')
         return teams, new_tokens
     for x in targets:
         x.health -= bits['response']['how']['increment']
         new_tokens.append(['been hit', x])
+        new_tokens.append(['spat at', x])
         x.this_turn['been hit'] = True
         new_tokens.append(['hit', teams[team_no][unit_pos]])
         new_tokens.append(['spit', teams[team_no][unit_pos]])
         teams[team_no][unit_pos].this_turn['hit'] = True
+        teams[team_no][unit_pos].this_turn['spit'] = True
         teams[team_no][unit_pos].actions += \
             f"Spits at {x.name}. "
         if bits['response']['how']['increment'] > 1:
@@ -171,8 +173,8 @@ def summon(teams, team_no, unit_pos, bits, tokens, when):
     new_tokens = []
     UID = find_new_UID(teams)
     if bits['response']['how']['type'] == 'relative':
-        if not ((bits['response']['how']['position'] < 0 and teams[team_no][unit_pos] == 0) or\
-            (bits['response']['how']['position'] > 0 and teams[team_no][unit_pos] == len(teams[team_no]))):
+        if not ((bits['response']['how']['position'] < 0 and teams[team_no][unit_pos] == 0) or
+                (bits['response']['how']['position'] > 0 and teams[team_no][unit_pos] == len(teams[team_no]))):
             for x in dictionaries.units:
                 if dictionaries.units[x]['name'] == teams[team_no + bits['response']['how']['team']]\
                         [unit_pos + bits['response']['how']['position']].name:
@@ -196,14 +198,16 @@ def summon(teams, team_no, unit_pos, bits, tokens, when):
 
 
 def find_new_UID(teams):
+    used_digits = []
+    for x in range(len(teams)):
+        for y in teams[x]:
+            if y.UID < 0:
+                used_digits.append(y.UID)
     UID = -1
     while True:
-        for x in range(len(teams)):
-            for y in teams[x]:
-                if y.UID == UID:
-                    UID -= 1
-                    break
-        return UID
+        if UID in used_digits:
+            UID -= 1
+        else: return UID
 
 
 def create_targets(teams, team_no, unit_pos, response, tokens):
@@ -222,7 +226,7 @@ def create_targets(teams, team_no, unit_pos, response, tokens):
     elif response['who']['type'] == 'any':
         targets = []
         for x in tokens:
-            if response['who']['type']['team'] == 'any':
+            if response['who']['team'] == 'any':
                 for y in range(2):
                     if (x[0] != response['who']['action']) or x[1] not in teams[team_no - y]:
                         pass
@@ -233,6 +237,8 @@ def create_targets(teams, team_no, unit_pos, response, tokens):
                     pass
                 else:
                     targets.append(x[1])
+        print('targets')
+        print(targets)
         return targets
     elif response['who']['type'] == 'all':
         return teams[team_no + response['who']['team']]
