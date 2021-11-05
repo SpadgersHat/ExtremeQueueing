@@ -183,7 +183,7 @@ def summon(teams, team_no, unit_pos, bits, tokens, when):
                     except IndexError:
                         return teams, new_tokens
     elif bits['response']['how']['type'] == 'code':
-        newbie = classes.Unit(dictionaries.units[bits['response']['how']['code']], bits['response']['how']['level'],
+        newbie = classes.Unit(dictionaries.summons[bits['response']['how']['code']], bits['response']['how']['level'],
                               UID)
     teams[team_no][unit_pos].actions += f"Summons {newbie.name} " \
                                         f"{move_strings[bits['response']['who']['position']]} of the queue. "

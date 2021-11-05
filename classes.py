@@ -25,3 +25,11 @@ class Unit:
                           'summon': False,
                           'summoned': True
                           }
+
+
+class Team:
+    def __init__(self, name):
+        self.name = name
+        self.roster = [[] for x in range(5)]
+        self.selected = False
+        self.ready = False

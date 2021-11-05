@@ -1,4 +1,3 @@
-flaps = ''
+list = [str(x) for x in range(1, 10)]
 
-if not flaps:
-    print('treen')
+print(list)
