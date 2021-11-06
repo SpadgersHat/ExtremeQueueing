@@ -1,9 +1,10 @@
-from matchrunner import match
-from dictionaries import units
-from random import randint
-from time import sleep
-from classes import Team, calc_levelled_stat
+import json
+import jsonpickle
 from copy import deepcopy
+from random import randint
+from classes import Team, calc_levelled_stat
+from dictionaries import units
+from matchrunner import match
 from teams import npcs
 
 
@@ -473,13 +474,53 @@ def autofill(team, collection):
     return team
 
 
+def pack(collection, teams):
+    full_dict = {'collection': collection,
+                 'teams': teams
+                 }
+    savefile = jsonpickle.encode(full_dict)
+    return savefile
+
+
+def save_to_file(dictionary, filename):
+    with open(filename, 'w') as outfile:
+        json.dump(dictionary, outfile)
+    print('Game saved!')
+
+
+def continue_game():
+    with open('gamesave.txt') as json_file:
+        savefile = json.load(json_file)
+        full_dict = jsonpickle.decode(savefile)
+        collection = full_dict['collection']
+        teams = full_dict['teams']
+        print('Game loaded!')
+    home(collection, teams)
+
+
 def new_game():
     print('New game! You have a fresh, empty collection.\n')
     collection = new_collection()
     teams = [Team('New Team') for x in range(5)]
+    home(collection, teams)
+
+
+def boot():
+    print('Welcome to Extreme Queueing!')
+    while True:
+        answer = input('\n- New Game (n)\n- Continue game (c)\n')
+        if answer == 'n':
+            new_game()
+        elif answer == 'c':
+            continue_game()
+        else:
+            print('Nah.')
+
+
+def home(collection, teams):
     while True:
         answer = input('- View your pal collection (v)\n- Open a pack (o)\n- Manage teams (m)\n'
-                       '- Autofill a team (a)\n- Fight! (f)\n')
+                       '- Autofill a team (a)\n- Save Game (s)\n- Fight! (f)\n')
         if answer == 'o':
             collection = open_pack(collection)
         elif answer == 'm':
@@ -490,11 +531,14 @@ def new_game():
             teams[0] = autofill(teams[4], collection)
         elif answer == 'f':
             setup_match(teams)
+        elif answer == 's':
+            savefile = pack(collection, teams)
+            save_to_file(savefile, 'gamesave.txt')
         else:
             print("That's not an option.")
 
 
-new_game()
+boot()
 
 
 # Change either of these team names to anything in the 'teams' file. You can add new teams on the 'teams' file and play
