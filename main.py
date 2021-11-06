@@ -469,7 +469,7 @@ def autofill(team, collection):
     print(team.roster)
     team.name = 'Autofill Team'
     team.ready = True
-    print("There's a random team ready for you in slot 1.")
+    print("There's a random team ready for you in slot 5.")
     return team
 
 
@@ -487,7 +487,7 @@ def new_game():
         elif answer == 'v':
             print_collection(collection)
         elif answer == 'a':
-            teams[0] = autofill(teams[0], collection)
+            teams[0] = autofill(teams[4], collection)
         elif answer == 'f':
             setup_match(teams)
         else:
