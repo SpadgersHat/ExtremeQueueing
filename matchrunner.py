@@ -36,7 +36,7 @@ def is_it_arrowhead(x, digit, team):
 
 
 def recruit(roster, code, level, UID):
-    newbie = classes.Unit(dictionaries.units[code], level, UID)
+    newbie = classes.Unit(dictionaries.units[code-1], level, UID)
     roster.append(newbie)
 
 

@@ -89,6 +89,8 @@ def adjust(teams, team_no, unit_pos, bits, tokens, when):
                     'become': ['changed', 'change', 'changes', 'to']}
     # Operates on the stat in ['stat'] by operation ['type'] by an ['increment'] to all valid targets.
     targets = create_targets(teams, team_no, unit_pos, bits['response'], tokens)
+    if not targets:
+        return teams, new_tokens
     for x in targets:
         if bits['response']['how']['stat'] == 'attack':
             x.attack = operate(x.attack, bits['response']['how']['type'], bits['response']['how']['increment'])
@@ -176,7 +178,7 @@ def summon(teams, team_no, unit_pos, bits, tokens, when):
         if not ((bits['response']['how']['position'] < 0 and teams[team_no][unit_pos] == 0) or
                 (bits['response']['how']['position'] > 0 and teams[team_no][unit_pos] == len(teams[team_no]))):
             for x in dictionaries.units:
-                if dictionaries.units[x]['name'] == teams[team_no + bits['response']['how']['team']]\
+                if [x]['name'] == teams[team_no + bits['response']['how']['team']]\
                         [unit_pos + bits['response']['how']['position']].name:
                     try:
                         newbie = classes.Unit(dictionaries.units[x], bits['response']['how']['level'], UID)

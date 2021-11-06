@@ -461,7 +461,8 @@ def flatten_team(team):
 
 def autofill(team, collection):
     for x in range(5):
-        team.roster[x] = collection[randint(0, len(collection))]
+        team.roster[x] = collection[randint(0, len(collection)-1)]
+    print(team.roster)
     team.name = 'Autofill Team'
     team.ready = True
     print("There's a random team ready for you in slot 1.")
