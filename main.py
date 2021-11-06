@@ -2,7 +2,7 @@ from matchrunner import match
 from dictionaries import units
 from random import randint
 from time import sleep
-from classes import Team
+from classes import Team, calc_levelled_stat
 from copy import deepcopy
 from teams import npcs
 
@@ -83,9 +83,7 @@ def list_collection(owned, available, collection):
                 count += 1
                 printed_count += 1
             else:
-                print(f'{edited_collection[count]["number"]}: {edited_collection[count]["name"]} '
-                      f'({capitalise(edited_collection[count]["rarity"])}, lvl.{edited_collection[count]["level"]})\n'
-                      f'      {edited_collection[count]["ability"]}\n')
+                print_pal(edited_collection[count])
                 count += 1
                 printed_count += 1
         except IndexError:
@@ -96,6 +94,14 @@ def list_collection(owned, available, collection):
                 print(choice)
             if (count == -100) or choice:
                 return choice
+
+
+def print_pal(pal):
+    current_stats = [calc_levelled_stat(pal["base stats"][0], pal["level"], pal["rarity"]),
+                     calc_levelled_stat(pal["base stats"][1], pal["level"], pal["rarity"])]
+    print(f'{pal["number"]}: {pal["name"]} '
+          f'({capitalise(pal["rarity"])}, lvl.{pal["level"]})\n'
+          f'      {current_stats[0]} | {current_stats[1]}    {pal["ability"]}\n')
 
 
 def move_options(limit, count, available, collection):
@@ -120,7 +126,7 @@ def move_options(limit, count, available, collection):
             if formatted_answer:
                 availables = [x for x in range(len(collection)) if
                               (not collection[x]['selected'] and collection[x]['level'] > 0)]
-                if trim_to_number(answer) in availables:
+                if trim_to_number(answer)-1 in availables:
                     return 0, 0, formatted_answer
                 else:
                     print('Not available')
@@ -137,7 +143,7 @@ def trim_to_number(string):
     for x in string:
         if x in digits:
             new_string += x
-    while new_string[0] == '0':
+    while new_string[0] == '0' and len(new_string) > 1:
         newer_string = ''
         for x in range(len(new_string)):
             if x == 0:
@@ -146,7 +152,7 @@ def trim_to_number(string):
                 newer_string += new_string[x]
         new_string = newer_string
     if new_string:
-        return int(new_string) - 1
+        return int(new_string)
     else:
         return False
 
@@ -268,9 +274,7 @@ def print_roster(name, roster):
         if not roster[x]:
             print(f'{x + 1}. Empty\n')
         else:
-            print(f'{x + 1}. {roster[x]["name"]} lvl.{roster[x]["level"]}\n   '
-                  f'{roster[x]["base stats"][0]} | {roster[x]["base stats"][0]}    '
-                  f'{roster[x]["ability"]}')
+            print_pal(roster[x])
 
 
 def edit_roster(team, collection):
@@ -328,12 +332,12 @@ def add_pal(team, roster, collection):
         print("Let's find some pals to add to your team...")
         choice = list_collection(True, True, collection)
         if choice:
-            position = pick_position(roster, collection, choice, team)
-        if choice and position:
-            roster[position - 1] = collection[choice]
-            # What if the name changes
-            collection[choice]['selected'] = team.name
-            print(f"Adding {collection[choice]['name']} to your team.")
+            position = pick_position(roster, collection, choice-1, team)
+            if position:
+                roster[position - 1] = collection[choice-1]
+                # What if the name changes
+                collection[choice]['selected'] = team.name
+                print(f"Adding {collection[choice-1]['name']} to your team.")
         while True:
             answer = input('- Add another (a)\n- Back (b)\n')
             if answer == 'a':
@@ -491,6 +495,7 @@ def new_game():
 
 
 new_game()
+
 
 # Change either of these team names to anything in the 'teams' file. You can add new teams on the 'teams' file and play
 # them here, or just write 'random' (lower case) to make a random team play in either position.

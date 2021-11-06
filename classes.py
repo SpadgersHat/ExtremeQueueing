@@ -7,12 +7,15 @@ class Unit:
                          'summon': 1}
         self.UID = UID
         self.name = stats['name']
-        self.attack = stats['attack']
-        self.health = stats['max health']
-        self.max_health = stats['max health']
-        self.ability_bits = stats['ability']
+        self.rarity = [stats['rarity']]
         self.level = level
-        self.level_max = rarity_levels[stats['rarity']]
+        self.base_attack = stats['attack']
+        self.attack = calc_levelled_stat(self.base_attack, self.level, self.rarity)
+        self.base_max_health = stats['max health']
+        self.max_health = calc_levelled_stat(self.base_max_health, self.level, self.rarity)
+        self.health = self.max_health
+        self.ability_bits = stats['ability']
+        self.level_max = rarity_levels[self.rarity]
         self.actions = ''
         self.this_turn = {'spent': False,
                           'hit': False,
@@ -25,6 +28,14 @@ class Unit:
                           'summon': False,
                           'summoned': True
                           }
+
+
+def calc_levelled_stat(base_stat, level, rarity):
+    multipliers = {'dry': 4,
+                   'moist': 3,
+                   'juicy': 2,
+                   'gushing': 1}
+    return int(base_stat * (level - 1) / multipliers[rarity] + base_stat)
 
 
 class Team:
